@@ -10,18 +10,30 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                     sendResponse({ error: "Gmailのタブではありません。" });
                     return;
                 }
-
+                
+                // ★★★★★ ここから修正 ★★★★★
                 // 2. content_script.js を実行してスレッドIDを取得
+
+                // content_script.js をファイルとして直接実行させる
+                
                 const injectionResults = await chrome.scripting.executeScript({
                     target: { tabId: tab.id },
-                    func: findThreadIdInPage, // content_script.jsの関数を実行
+                    files: ["content_script.js"], // func ではなく files を使う
                 });
+                // ★★★★★ ここまで修正 ★★★★★
 
-                const threadId = injectionResults[0].result;
-                if (!threadId) {
-                    sendResponse({ error: "メールのスレッドIDを取得できませんでした。" });
+                if (chrome.runtime.lastError) {
+                    // 注入時にエラーが発生した場合
+                    sendResponse({ error: chrome.runtime.lastError.message });
                     return;
                 }
+                
+                const threadId = injectionResults[0].result;
+                if (!threadId) {
+                    sendResponse({ error: "メールのスレッドIDを取得できませんでした。メール本文をクリックして選択状態にしてみてください。" });
+                    return;
+                }
+                
 
                 // 3. 認証トークンを取得
                 const token = await chrome.identity.getAuthToken({ interactive: true });
@@ -52,15 +64,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         return true; // 非同期レスポンスのためにtrueを返す
     }
 });
-
-// executeScript内で実行する関数。content_script.jsの内容と同じだが、このように書く必要がある
-function findThreadIdInPage() {
-    const element = document.querySelector('[data-thread-id]');
-    if (element) {
-        return element.getAttribute('data-thread-id');
-    }
-    return null;
-}
 
 // APIレスポンス(payload)から本文(text/plain)を抽出・デコードする関数
 function getBody(payload) {
