@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Gmail メール詳細表示",
+  "version": "1.0",
+  "description": "開いているメールの件名と本文をポップアップに表示します。",
+
+  "permissions": [
+    "identity",    
+    "scripting"    
+  ],
+  "host_permissions": [
+    "https://mail.google.com/" 
+  ],
+
+  "action": {
+    "default_popup": "popup.html" 
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "oauth2": {
+    "client_id": "218373468575-h2q2ig6tskdl5k9kucve4f5im4v5i9iq.apps.googleusercontent.com", 
+    "scopes": [
+      "https://www.googleapis.com/auth/gmail.readonly" 
+    ]
+  }
+}
