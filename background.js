@@ -1,6 +1,7 @@
 // background.js
 
 
+
 // getBody関数は変更なしなので、そのまま残してください
 // APIレスポンス(payload)から本文(text/plain)を抽出・デコードする関数
 function getBody(payload) {
@@ -23,40 +24,37 @@ function getBody(payload) {
 
 // popup.jsからのメッセージを受け取るリスナー
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    if (request.type === "GET_MAIL_DETAIL") {
-        // 非同期処理を行うので true を返す
+    // メッセージのtypeと、tokenが含まれているかを確認
+    if (request.type === "FETCH_MAIL_DETAIL" && request.token) {
         (async () => {
             try {
-                // 1. 現在アクティブなタブを取得
+                // 1. 現在アクティブなタブを取得 (変更なし)
                 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
                 if (!tab.url || !tab.url.includes("mail.google.com")) {
                     sendResponse({ error: "Gmailのタブではありません。" });
                     return;
                 }
-                console.log(tab.url)
 
-                // ★★★★★ ここが新しい処理 ★★★★★
-                // 2. URLからメール(スレッド)IDを抽出
+                // 2. URLからメール(スレッド)IDを抽出 (変更なし)
                 const urlParts = tab.url.split('/');
-                console.log(urlParts)
-                const threadId = urlParts[urlParts.length - 1]; // URLの最後の部分を取得
-
-                // IDが有効な形式か軽くチェック (GmailのIDは16文字以上の英数字)
+                const threadId = urlParts[urlParts.length - 1];
                 if (threadId.length < 16) {
                     sendResponse({ error: "URLからメールIDを取得できませんでした。メールを開いた状態ですか？" });
                     return;
                 }
-                // ★★★★★ ここまで ★★★★★
-
-                // 3. 認証トークンを取得 (変更なし)
-                const token = await chrome.identity.getAuthToken({ interactive: true });
+                
+                // ★★★★★ ここから修正 ★★★★★
+                // 3. 認証トークンはメッセージから受け取る (getAuthTokenを削除)
+                const token = request.token;
+                // ★★★★★ ここまで修正 ★★★★★
 
                 // 4. Gmail APIでスレッド詳細を取得 (変更なし)
                 const threadDetails = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 }).then(res => res.json());
 
-                // スレッドの一番最後の（最新の）メッセージを取得
+                // (以降の処理は変更なし)
+                 // スレッドの一番最後の（最新の）メッセージを取得
                 const latestMessage = threadDetails.messages[threadDetails.messages.length - 1];
 
                 // 5. ヘッダーから件名を取得
