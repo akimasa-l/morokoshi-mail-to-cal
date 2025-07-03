@@ -35,18 +35,20 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                     return;
                 }
 
-                // 2. URLからメール(スレッド)IDを抽出 (変更なし)
-                const urlParts = tab.url.split('/');
-                const threadId = urlParts[urlParts.length - 1];
-                if (threadId.length < 16) {
-                    sendResponse({ error: "URLからメールIDを取得できませんでした。メールを開いた状態ですか？" });
+                // URLの形式全体を検証し、末尾まで考慮してIDを抽出する正規表現
+                const regex = /^https:\/\/mail\.google\.com\/mail\/u\/[0-9]+\/.*\/([a-zA-Z0-9\-_]{16,})(?:\?.*)?$/;
+                const match = tab.url ? tab.url.match(regex) : null;
+                const threadId = match ? match[1] : null;
+                                    
+
+
+                if (!threadId) {
+                    sendResponse({ error: "Gmailのメール詳細ページのURLではないようです。" });
                     return;
                 }
                 
-                // ★★★★★ ここから修正 ★★★★★
                 // 3. 認証トークンはメッセージから受け取る (getAuthTokenを削除)
                 const token = request.token;
-                // ★★★★★ ここまで修正 ★★★★★
 
                 // 4. Gmail APIでスレッド詳細を取得 (変更なし)
                 const threadDetails = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`, {
@@ -55,6 +57,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
                 // (以降の処理は変更なし)
                  // スレッドの一番最後の（最新の）メッセージを取得
+                 sendResponse({ error: `${JSON.stringify(threadDetails)}` });
                 const latestMessage = threadDetails.messages[threadDetails.messages.length - 1];
 
                 // 5. ヘッダーから件名を取得
