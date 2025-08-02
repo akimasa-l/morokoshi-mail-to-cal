@@ -2,6 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    // その後、改めて新しいトークンを要求する
     // 1. まず、このポップアップ内で認証トークンを取得する
     const token = await chrome.identity.getAuthToken({ interactive: true });
     
